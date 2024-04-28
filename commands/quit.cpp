@@ -22,7 +22,6 @@ void Server::quit_cmd(std::string cmd, int fd)
             client_socket[i] = 0;
         }
     }
-  
     std::vector<std::string> channelsToDelete;
     std::vector<int> sendMsgFd;
     for (std::map<std::string, Channel*>::iterator it =  Channels.begin(); it !=  Channels.end(); ++it) 
@@ -69,14 +68,12 @@ void Server::quit_cmd(std::string cmd, int fd)
         {
             sendMyMsg(*it1, RPL_QUIT(Clients[*it1]->getPrefix(), (Clients[fd]->getNickname() + " " +msg))); 
         }
-
     for (std::vector<std::string>::const_iterator it = channelsToDelete.begin(); it != channelsToDelete.end(); ++it) 
     {
         Channel* channelPtr = Channels[*it];
         Channels.erase(*it);
         delete channelPtr;
     }
-
     delete  Clients[fd];
     close(fd);
     Clients.erase(fd);

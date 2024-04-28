@@ -1,6 +1,6 @@
 # include "../Server.hpp"
 
-void Server::nick_cmd(std::string cmd, int fd) // eroornera sxala tpum, bayc casery chishta
+void Server::nick_cmd(std::string cmd, int fd) 
 {
     std::vector<std::string>  splited =  split(cmd, ' '); 
     if (splited.size() == 2)
@@ -9,20 +9,20 @@ void Server::nick_cmd(std::string cmd, int fd) // eroornera sxala tpum, bayc cas
         {
             if(it->second->getNickname() == splited[1]  && it->first!=fd)
             {
-                sendMyMsg(fd, ERR_NICKNAMEINUSE(splited[0], splited[1])); // done
+                sendMyMsg(fd, ERR_NICKNAMEINUSE(splited[0], splited[1])); 
                 return;
             } 
         }
     }
-    if(splited.size() < 2)       
+   if (splited.size() < 2)
     {
-        sendMyMsg(fd, ERR_NEEDMOREPARAMS(Clients[fd]->getPrefix(),splited[0]));  // done
+        sendMyMsg(fd,  ERR_NEEDMOREPARAMS(Clients[fd]->getPrefix(),splited[0])); 
         return ;
     }  
-    if(splited.size() > 2)       
+    if (splited.size() > 2)
     {
-        sendMyMsg(fd, ERR_NEEDLESSPARAMS(Clients[fd]->getPrefix(),splited[0]));  // sa chi ashxatummmmmmmm
+        sendMyMsg(fd,  ERR_NEEDLESSPARAMS(Clients[fd]->getPrefix(),splited[0])); 
         return ;
-    }  
+    }   
     Clients[fd]->setNickname(splited[1]);
 }

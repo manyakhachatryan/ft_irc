@@ -3,7 +3,6 @@
 #include "Server.hpp"
 Client::Client(std::string nickName, std::string userName, int fd, struct sockaddr_in address)
 {
-    std::cout<<"CLIENT CONSSTRUCTOR"<<std::endl;
     _username = userName;
     _nickname = nickName;
     _onlineFD = fd;
@@ -13,6 +12,7 @@ Client::Client(std::string nickName, std::string userName, int fd, struct sockad
     char hostname[NI_MAXHOST];
     getnameinfo((struct sockaddr*)&address, sizeof(address), hostname, NI_MAXHOST, NULL, 0, NI_NUMERICSERV);
     _hostname = hostname;
+    tmpBuff = "";
 }
 
 std::string Client::getNickname()
@@ -41,7 +41,6 @@ void Client::setOnlineFD(int fd)
 {
     _onlineFD = fd;
 }
-
 
 void Client::setNickname(std::string nickname)
 {

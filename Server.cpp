@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "utils.hpp"
+#include <signal.h>
 
 Server::Server(){}
 
@@ -16,6 +17,7 @@ void Server::setPassword(std::string password){_password = password;}
 
 void Server::createServer()
 {
+    int opt = TRUE;   
     struct sockaddr_in address;
     int master_socket , addrlen , new_socket  ,  
           max_clients = CLIENTLIMIT , activity, i , valread , sd;   
@@ -34,23 +36,25 @@ void Server::createServer()
         exit(EXIT_FAILURE);   
     }   
 
-   int flags = fcntl(master_socket, F_GETFL, 0);
+   int flags = fcntl(master_socket, F_SETFL, O_NONBLOCK);
     if (flags == -1) {
         perror("fcntl");
         return;
     }
 	
-    // if (fcntl(master_socket, F_SETFL, flags | O_NONBLOCK) == -1) { // karoxa petq ga, chgitem
-    //     perror("fcntl");
-    //     return;
-    // }
+
+    if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt,  
+          sizeof(opt)) < 0 )   
+    {   
+        perror("setsockopt");   
+        exit(EXIT_FAILURE);   
+    }   
      
-    //type of socket created  
+
     address.sin_family = AF_INET;   
     address.sin_addr.s_addr = INADDR_ANY;   
     address.sin_port = htons( getPortNumber());   
-         
-    //bind the socket to localhost port 8888  
+
     if (::bind(master_socket, (struct sockaddr *)&address, sizeof(address)) < 0 )   
     {   
         perror("bind failed");   
@@ -58,57 +62,36 @@ void Server::createServer()
     }   
     printf("Listener on port %d \n", getPortNumber());   
          
-    //try to specify maximum of 3 pending connections for the master socket  
     if (listen(master_socket, 3) < 0)   
     { 
         perror("listen");   
         exit(EXIT_FAILURE);   
     }   
-    //accept the incoming connection  
     addrlen = sizeof(address);   
     puts("Waiting for connections ...");   
 
-//---------------------------------------------------------------------------------------
-
     while(TRUE)   
     {   
-   
-        //clear the socket set  
         FD_ZERO(&readfds);   
-     
-         //add master socket to set  
         FD_SET(master_socket, &readfds); 
-
         max_sd = master_socket;   
-             
-        //add child sockets to set  
+
         for ( i = 0 ; i < max_clients ; i++)   
         {       
-    
-            //socket descriptor  
             sd = client_socket[i];   
-                 
-            //if valid socket descriptor then add to read list  
             if(sd > 0){
                 FD_SET( sd , &readfds);   
             }   
-                 
-            //highest file descriptor number, need it for the select function  
             if(sd > max_sd)   
                 max_sd = sd; 
         }   
     
         activity = select(max_sd + 1, &readfds , NULL , NULL , NULL);   
        
-        if ((activity < 0) && (errno!=EINTR))   
+        if (activity < 0)   
         {   
             printf("select error\n");   
-        }   
-             
-        //If something happened on the master socket ,  
-        //then its an incoming connection  
-
-               
+        }                  
         if (FD_ISSET(master_socket, &readfds))   
         {   
             if ((new_socket = accept(master_socket,  
@@ -118,34 +101,28 @@ void Server::createServer()
                 exit(EXIT_FAILURE);   
             }   
              
-            //send new connection greeting message  
-            if( send(new_socket, "You are connected to server\n", 29, 0) != 29 )   
+            if(send(new_socket, "You are connected to server\n", 29, 0) != 29 )   
             {   
                 perror("send");   
             }   
             puts("Welcome message sent successfully");   
-                 
-            //add new socket to array of sockets  
+                  
             for (i = 0; i < max_clients; i++)   
             {   
-                //if position is empty  
                 if( client_socket[i] == 0 )   
                 {   
                     client_socket[i] = new_socket;   
-                    printf("Adding to list of sockets as %d\n" , i);   
-                         
+                    printf("Adding to list of sockets as %d\n" , i);              
                     break;   
                 }   
             }   
-            if(i == 5){
+            if(i == CLIENTLIMIT){
                 send(new_socket, "LIMIT\n", 7, 0);
                 close(new_socket);
             }
             
         }   
 
-    
-        //else its some IO operation on some other socket 
         for (i = 0; i < max_clients; i++)   
         {   
             sd = client_socket[i];   
@@ -153,18 +130,24 @@ void Server::createServer()
             {   
                 std::memset(buffer, '\0', sizeof(buffer));
                 valread = recv( sd , buffer, 1024, 0);
+               
                 if (valread  > 0)   
-                {    
+                {   
                     std::map<int, Client*>::iterator it = Clients.find(sd);
                     if (it == Clients.end())
                         Clients.insert(std::make_pair<int, Client*>(sd, new Client("", "", sd, address)));
-                    std::cout<<"|"<<buffer<<"|"<<std::endl;
-                    executeCommand(buffer, sd);
-                     buffer[valread] = '\0'; 
+                    Clients[sd]->tmpBuff+=buffer;     
+
+                    if(buffer[valread-1]=='\n')
+                    {
+                        if(buffer[0]!='\n')
+                            executeCommand(Clients[sd]->tmpBuff, sd);
+                        else Clients[sd]->tmpBuff="";
+                        buffer[valread] = '\0'; 
+                    }
                 }   
                 else if(valread<=0)
                 {    
-                    std::cout<<"*****buffer***"<<buffer<<"*****"<<std::endl;
                     quit_cmd(buffer, sd);
                     buffer[valread] = '\0';                       
                 } 
@@ -192,7 +175,6 @@ void Server::createServer()
                         std::cout<<it->second->clients[i]<<" ";
                     std::cout<<std::endl;
                 }
-            //   system("leaks ./ircserv");
             }   
         }
     }   
@@ -218,42 +200,27 @@ void Server::executeCommand(std::string cmd, int sd)
         privmsg_cmd(cmd, sd);
     else if (!cmd.compare(0,4, "JOIN") && s==4)
         join_cmd(cmd, sd);
-    // else if (!cmd.compare(0,4, "KICK"))
-    //     kick_cmd(cmd, onlineClientsFD(sd));
+    else if (!cmd.compare(0,3, "WHO") && s==3)
+        who_cmd(cmd, sd);
+    else if (!cmd.compare(0,4, "KICK") && s==4)
+        kick_cmd(cmd, sd);
     else if (!cmd.compare(0,4, "MODE") && s==4)
         mode_cmd(cmd, sd);
     else if (!cmd.compare(0,5, "TOPIC") && s==5)
         topic_cmd(cmd, sd);
-    // else if (!cmd.compare(0,6, "INVITE"))
-    //     invite_cmd(cmd, onlineClientsFD(sd));
-       else {
-            std::cout<<"{"<<Clients[sd]->getPrefix()<<"}"<<std::endl;
-            sendMyMsg(sd,  ERR_UNKNOWNCOMMAND(Clients[sd]->getPrefix(), splited[0]));
-       }
-
+    else if (!cmd.compare(0,6, "INVITE") && s==6)
+        invite_cmd(cmd, sd);
+    else 
+        sendMyMsg(sd,  ERR_UNKNOWNCOMMAND(Clients[sd]->getPrefix(), splited[0]));
+    if (cmd.compare(0,4, "QUIT"))
+    {
+         Clients[sd]->tmpBuff="";
+    }
     if (cmd.compare(0,4, "QUIT") && s == 4)
     {
          isClientFull(sd); 
     }
-
 }
-
-
-
-
-
-int Server::onlineClientsFD(int index)
-{
-    for (std::map<int, Client*>::iterator it = Clients.begin(); it != Clients.end(); ++it) 
-    {
-        if(it->second->getOnlineFD()==index)
-        {
-            return it->first;
-        } 
-    }
-    return -1;
-}
-
 
 int Server::isClientFull(int fd)
 {
@@ -267,3 +234,5 @@ int Server::isClientFull(int fd)
         } 
     return 0;
 }
+
+

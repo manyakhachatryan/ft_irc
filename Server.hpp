@@ -21,8 +21,7 @@
 #define TRUE   1  
 #define FALSE  0  
 #define USERSMAXCHANNELCOUNT 3
-#define CLIENTLIMIT 4
-//class Client;
+#define CLIENTLIMIT 1000
 
 class Server 
 {
@@ -37,15 +36,12 @@ class Server
     public:
         Server();
         Server(int portNumber, std::string password);
-        static void signalHandler(int signal);
         int getPortNumber();
         void setPortNumber(int portNumber);
-
         std::string getPassword();
         void setPassword(std::string password);
         void executeCommand(std::string cmd, int index);
         void createServer();
-
         void pass_cmd(std::string cmd, int index);
         void nick_cmd(std::string cmd, int index);
         void user_cmd(std::string cmd, int index);
@@ -57,9 +53,10 @@ class Server
         void topic_cmd(std::string cmd, int index);
         void invite_cmd(std::string cmd, int index);
         void ping_cmd(std::string cmd, int index);
-        int onlineClientsFD(int index);
+        void who_cmd(std::string cmd, int index);
         int isClientFull(int fd);
         void createOrRegister(int fd);
+   
 };
 
 #endif

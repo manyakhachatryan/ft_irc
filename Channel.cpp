@@ -12,5 +12,5 @@ Channel::Channel()
 }
 
 
- std::string Channel::getPassword(){ return _password;}
+std::string Channel::getPassword(){ return _password;}
 void Channel::setPassword(std::string pass){ _password = pass;}

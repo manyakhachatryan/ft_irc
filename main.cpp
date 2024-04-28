@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <stdexcept>
 #include "Server.hpp"
@@ -21,7 +20,6 @@ int parsPort(std::string port)
 
 int main(int count, char** argv)
 {
-    (void)argv;
    try
    {
         if (count != 3)

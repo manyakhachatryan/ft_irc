@@ -26,6 +26,7 @@ class Client
         int getOnlineFD();
         void setOnlineFD(int fd);
         const std::string getPrefix();
+        std::string tmpBuff;
         
        
 };

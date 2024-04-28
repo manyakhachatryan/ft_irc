@@ -11,18 +11,14 @@ class Channel
         Channel();
         std::vector<int>  clients; 
         std::vector<int>  adminIDs; 
-        //int adminID;
         unsigned long ChatLimit;
         std::string topic;
-
-
         bool mode_i;
         bool mode_t;
         bool mode_k;
         bool mode_l;
-
-         std::string getPassword();
-         void setPassword(std::string pass);
+        std::string getPassword();
+        void setPassword(std::string pass);
 };
 
 #endif  

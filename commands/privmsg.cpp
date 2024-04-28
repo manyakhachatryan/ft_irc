@@ -4,10 +4,10 @@ void Server::privmsg_cmd(std::string cmd, int fd)
  {
     if(!isClientFull(fd))
     {
-        sendMyMsg(fd,  "You dont have account, first register\n");
+        sendMyMsg(fd,  ERR_NOTREGISTERED(Clients[fd]->getPrefix()));
         return; 
     }
-    std::vector<std::string>  splited =  split(cmd, ' ');  // splited[1]// ch or client
+    std::vector<std::string>  splited =  split(cmd, ' '); 
     if (splited.size() == 1)
     {
         sendMyMsg(fd,  ERR_NEEDMOREPARAMS(Clients[fd]->getPrefix(),splited[0]));
@@ -18,9 +18,9 @@ void Server::privmsg_cmd(std::string cmd, int fd)
     {
         msg = msg + splited[i] + " ";
     }
-    if(splited[1][0] == '#' || splited[1][0] == '&') // fd - privmsg #ch1 fghjkl fghjk
+    if(splited[1][0] == '#' || splited[1][0] == '&') 
     {
-        if(Channels.find(splited[1]) == Channels.end())   // ete tenc channel chka
+        if(Channels.find(splited[1]) == Channels.end()) 
         {
             sendMyMsg(fd, ERR_NOSUCHCHANNEL(Clients[fd]->getPrefix(), splited[1]));
             return;
@@ -33,7 +33,7 @@ void Server::privmsg_cmd(std::string cmd, int fd)
         }
         if (splited.size() == 2)
         {
-            sendMyMsg(fd,  ERR_NOTEXTTOSEND(Clients[fd]->getPrefix(),splited[1]));
+            sendMyMsg(fd,  ERR_NOTEXTTOSEND(Clients[fd]->getPrefix()));
             return ;
         }
         for(std::vector<int>::iterator it = Channels[splited[1]]->clients.begin(); it != Channels[splited[1]]->clients.end(); ++it)
@@ -46,7 +46,7 @@ void Server::privmsg_cmd(std::string cmd, int fd)
     {
         if (splited.size() == 2)
         {
-            sendMyMsg(fd,  ERR_NOTEXTTOSEND(Clients[fd]->getPrefix(),splited[1]));
+            sendMyMsg(fd,  ERR_NOTEXTTOSEND(Clients[fd]->getPrefix()));
             return ;
         }
         for (std::map<int, Client*>::iterator it = Clients.begin(); it != Clients.end(); ++it) 

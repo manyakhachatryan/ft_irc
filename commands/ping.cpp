@@ -1,6 +1,6 @@
 # include "../Server.hpp"
 
-void Server::ping_cmd(std::string cmd, int index) // done
+void Server::ping_cmd(std::string cmd, int index) 
 {
     std::vector<std::string> splited = split(cmd, ' ');
     if(splited.size()==1)
